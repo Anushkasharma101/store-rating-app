@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { FaEnvelope, FaEye, FaEyeSlash } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
@@ -8,20 +8,24 @@ const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
-
+  
   // ✅ Auto-redirect if already logged in
   useEffect(() => {
     const token =
       localStorage.getItem("token") || sessionStorage.getItem("token");
     if (token) {
-      navigate("/dashboard");
+      navigate("/");
     }
   }, [navigate]);
 
   const handleLogin = async (e) => {
+    if(email === "" || password === ""){
+      alert("Fill Email & Password fields");
+      return;
+    }
     e.preventDefault();
     try {
-      const res = await fetch("http://localhost:5000/api/auth/login", {
+      const res = await fetch("https://backendlearning-9mmn.onrender.com/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, rememberMe }),
@@ -29,13 +33,11 @@ const LoginPage = () => {
 
       const data = await res.json();
       if (res.ok) {
-        // ✅ Store token based on rememberMe
-        if (rememberMe) {
           localStorage.setItem("token", data.token); // persistent
-        } else {
-          sessionStorage.setItem("token", data.token); // session only
-        }
-        navigate("/dashboard");
+      localStorage.setItem('rememberMe', JSON.stringify(data.rememberMe));
+      localStorage.setItem('name', data.user.name);
+      localStorage.setItem('role', data.user.role);
+        navigate("/");
       } else {
         alert(data.msg || "Login failed");
       }
@@ -69,7 +71,7 @@ const LoginPage = () => {
       <div className="flex w-full md:w-1/2 items-center justify-center p-8 absolute right-0 h-full">
         <div className="w-full max-w-md rounded-xl p-8 h-[80%] flex flex-col">
           <div>
-            <h2 className="text-3xl font-bold mb-6 text-center font-lato text-black">
+            <h2 className="text-3xl font-bold mb-6 text-center font-lato text-[#2d2c2c]">
               Log In
             </h2>
 
@@ -84,7 +86,7 @@ const LoginPage = () => {
                     placeholder="example@gmail.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-2 border border-[#474747] rounded-lg bg-transparent font-lato font-normal text-black placeholder:text-[#2D2C2C]"
+                    className="w-full px-4 py-2 border border-[#474747] focus:placeholder:text-[#515151] rounded-lg bg-transparent font-lato font-normal text-[#2d2c2c] placeholder:text-[#2D2C2C]"
                   />
                   <FaEnvelope className="absolute right-3 top-3 text-[#2D2C2C]" />
                 </div>
@@ -97,10 +99,10 @@ const LoginPage = () => {
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
-                    placeholder="********"
+                    placeholder="••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-4 py-2 border border-[#474747] rounded-lg bg-transparent font-lato font-normal text-black placeholder:text-[#2D2C2C]"
+                    className="w-full px-4 py-2 border border-[#474747] focus:placeholder:text-[#515151] rounded-lg bg-transparent font-lato font-normal text-[#2d2c2c] placeholder:text-[#2D2C2C]"
                   />
                   <span
                     onClick={() => setShowPassword(!showPassword)}
@@ -117,9 +119,9 @@ const LoginPage = () => {
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="peer w-5 h-5 appearance-none border border-black rounded-md checked:bg-black checked:border-black relative"
+                    className="peer w-5 h-5 appearance-none border border-[#2d2c2c] cursor-pointer  rounded-md checked:bg-[#2d2c2c] checked:border-[#2d2c2c] relative"
                   />
-                  <span className="text-black font-normal">Remember</span>
+                  <span className="text-[#2d2c2c] font-normal">Remember</span>
 
                   <style>
                     {`
@@ -137,7 +139,7 @@ const LoginPage = () => {
                 </div>
 
                 <div
-                  className="cursor-pointer font-lato font-normal text-[#2D2C2C] "
+                  className="cursor-pointer font-lato font-normal hover:underline text-[#2D2C2C] "
                   onClick={() => navigate("/forgotpassword")}
                 >
                   Forgotten?
@@ -161,7 +163,7 @@ const LoginPage = () => {
           <div className="mt-6">
             <button
               type="submit"
-              className="w-full bg-transparent text-[#2D2C2C] py-3 rounded-lg border border-[#303030] font-lato font-bold text-sm"
+              className="w-full bg-transparent text-[#2D2C2C] py-3 rounded-lg border border-[#303030] hover:bg-[#474747] hover:text-white font-lato font-bold text-sm"
               onClick={() => navigate("/signup")}
             >
               Sign Up
