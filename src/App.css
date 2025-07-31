@@ -1,0 +1,19 @@
+.custom-toast {
+  background-color: white !important;
+  color: #333 !important;
+  border: 1px solid #ccc !important;
+  font-weight: bold !important;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;              /* narrow scrollbar */
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: black; /* black thumb */
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent; /* no background */
+}

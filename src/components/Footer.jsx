@@ -3,6 +3,15 @@ import { useNavigate } from "react-router-dom";
 
 const Footer = () => {
   const navigate = useNavigate();
+  const role = localStorage.getItem("role");
+
+  const handleDashboardClick = () => {
+    if (role === "ADMIN") {
+      navigate("/admindashboard");
+    } else if (role === "OWNER") {
+      navigate("/ownerdashboard");
+    }
+  };
 
   return (
     <div className="w-full h-full bg-[#A4957B] p-3 pl-20 pr-20">
@@ -22,12 +31,22 @@ const Footer = () => {
             <span className="">Shops</span>
             <span className="">FAQ</span>
           </div>
-          <div className="mt-5">
-            <button className='py-3 px-16 bg-[#474747] text-white rounded-md'
-            onClick={() => navigate("/ownerdashboard")}
-            >Dashboard</button>
-          </div>
-          <p className="text-white font-lato font-normal mt-3">Copyright © 2024 Trendora Pvt. Ltd.</p>
+
+
+          {(role === "ADMIN" || role === "OWNER") && (
+            <div className="mt-5">
+              <button
+                className="py-3 px-16 bg-[#474747] text-white rounded-md"
+                onClick={handleDashboardClick}
+              >
+                Dashboard
+              </button>
+            </div>
+          )}
+
+          <p className="text-white font-lato font-normal mt-3">
+            Copyright © 2024 Trendora Pvt. Ltd.
+          </p>
           
         </div>
         <div className="flex flex-col justify-center items-center w-[30%] border-l border-white">

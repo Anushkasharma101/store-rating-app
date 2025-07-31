@@ -1,6 +1,4 @@
 import React, { useEffect, useState } from "react";
-import Navbar from "../components/Navbar";
-import LoginSignupBtn from "../components/LoginSignupBtn";
 import { BiPlus } from "react-icons/bi";
 import { RxCross2 } from "react-icons/rx";
 import Footer from "../components/Footer";
@@ -12,70 +10,105 @@ const AdminDashboardPage = () => {
   const [isStoreModalOpen, setIsStoreModalOpen] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [userName, setUserName] = useState("");
+  const [userEmail, setUserEmail] = useState("");
+  const [userPassword, setUserPassword] = useState("");
+  const [userRole, setUserRole] = useState("");
+  const [userAddress, setUserAddress] = useState("");
+  const [userLoading, setUserLoading] = useState(false);
+  const [userMessage, setUserMessage] = useState("");
+  const [storeName, setStoreName] = useState("");
+  const [storeOwnerEmail, setStoreOwnerEmail] = useState("");
+  const [storeAddress, setStoreAddress] = useState("");
+  const [storeLoading, setStoreLoading] = useState(false);
+  const [storeMessage, setStoreMessage] = useState("");
 
-  const totalUsers = 100;
-  const listedStores = 400;
-  const totalReviewers = 40;
-
-  // Dummy store list
-  const stores = Array.from({ length: 12 }, (_, i) => ({
-    id: i + 1,
-    name: "Store Name",
-    address:
-      "123 Market Lane, Sector 5, Andheri East, Mumbai, Maharashtra 400069, India",
-    ratingCount: Math.floor(Math.random() * 500) + 10,
-  }));
-
-  const allUsers = Array.from({ length: 100 }, (_, i) => ({
-    id: i + 1,
-    name: `User ${i + 1}`,
-    email: `user${i + 1}@example.com`,
-    address: `123 Street ${i + 1}, Mumbai, India`,
-    role: ["Admin", "User", "Owner"][i % 3],
-    rating: Math.floor(Math.random() * 5) + 1,
-  }));
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [listedStores, setListedStores] = useState(0);
+  const [totalReviewers, setTotalReviewers] = useState(0);
+  const [stores, setStores] = useState([]);
 
   const [visibleUsers, setVisibleUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
-
   const ITEMS_PER_PAGE = 15;
+  
+  const [reviewers, setReviewers] = useState([]);
+
+  const fetchReviewers = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("Admin token missing.");
+      return;
+    }
+
+    const res = await fetch("https://backendlearning-9mmn.onrender.com/api/admin/reviewers", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      setReviewers(data || []);
+    } else {
+      console.error("Failed to fetch reviewers:", data.msg);
+    }
+  } catch (err) {
+    console.error("Fetch Reviewers Error:", err);
+  }
+};
+
+const fetchAdminDashboard = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("Admin token missing.");
+      return;
+    }
+
+    const res = await fetch("https://backendlearning-9mmn.onrender.com/api/admin/getallstores", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await res.json();
+    console.log(data.json);
+    
+    if (res.ok) {
+      setTotalUsers(data.total_users);
+      setListedStores(data.total_stores);
+      setTotalReviewers(data.total_reviewers);
+      setStores(data.stores || []);
+    } else {
+      console.error("Failed to fetch admin dashboard:", data.msg);
+    }
+  } catch (err) {
+    console.error("Admin Dashboard Fetch Error:", err);
+  }
+};
+
 
   useEffect(() => {
-    loadMoreUsers();
-    // eslint-disable-next-line
+    fetchAdminDashboard();
+    fetchReviewers();
   }, []);
 
-  const loadMoreUsers = () => {
-    if (loading) return;
-    setLoading(true);
-
-    setTimeout(() => {
-      const nextUsers = allUsers.slice(
-        (page - 1) * ITEMS_PER_PAGE,
-        page * ITEMS_PER_PAGE
-      );
-      setVisibleUsers((prev) => [...prev, ...nextUsers]);
-      setPage((prev) => prev + 1);
-      setLoading(false);
-    }, 1000);
-  };
-
   useEffect(() => {
-    const handleScroll = () => {
-      if (
-        window.innerHeight + window.scrollY >=
-        document.body.offsetHeight - 200
-      ) {
-        loadMoreUsers();
-      }
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [page, loading]);
+  const start = (page - 1) * ITEMS_PER_PAGE;
+  const end = start + ITEMS_PER_PAGE;
+  setVisibleUsers(reviewers.slice(start, end));
+}, [reviewers, page]);
+
 
   // Open Add User Popup
-  const openUserModal = () => {
+    const openUserModal = () => {
     setIsUserModalOpen(true);
     setIsStoreModalOpen(false);
     setShowModal(false);
@@ -95,21 +128,120 @@ const AdminDashboardPage = () => {
     setShowModal(false);
   };
 
+  const handleAddUser = async (e) => {
+    e.preventDefault();
+    setUserLoading(true);
+    setUserMessage("");
+
+    if (!userName || !userEmail || !userPassword || !userRole) {
+      setUserMessage("All fields are required.");
+      setUserLoading(false);
+      return;
+    }
+
+    const roleMap = {
+      User: "USER",
+      "Store Owner": "OWNER",
+      "System Administrator": "ADMIN",
+    };
+
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setUserMessage("You must login as admin first.");
+        return;
+      }
+      const response = await fetch(
+        "https://backendlearning-9mmn.onrender.com/api/admin/add-user",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            name: userName,
+            email: userEmail,
+            password: userPassword,
+            address: userAddress,
+            role: roleMap[userRole] || "",
+          }),
+        }
+      );
+
+      if (response.ok) {
+        setUserMessage("User added successfully!");
+        setTimeout(() => {
+          closeModal();
+        }, 1500);
+      } else {
+        const errorData = await response.json();
+        console.log(errorData);
+
+        setUserMessage(errorData.message || "Failed to add user.");
+      }
+    } catch (error) {
+      setUserMessage("Server error. Please try again.");
+    } finally {
+      setUserLoading(false);
+    }
+  };
+
+  const handleAddStore = async (e) => {
+    e.preventDefault();
+    setStoreLoading(true);
+    setStoreMessage("");
+
+    if (!storeName || !storeOwnerEmail) {
+      setStoreMessage("Store name and owner email are required.");
+      setStoreLoading(false);
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setStoreMessage("You must login as admin first.");
+        setStoreLoading(false);
+        return;
+      }
+
+      const response = await fetch(
+        "https://backendlearning-9mmn.onrender.com/api/admin/add-store",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            name: storeName,
+            address: storeAddress,
+            ownerEmail: storeOwnerEmail,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setStoreMessage("Store added successfully!");
+        setTimeout(() => {
+          closeModal();
+        }, 1500);
+      } else {
+        setStoreMessage(result.msg || "Failed to add store.");
+      }
+    } catch (error) {
+      console.error("Error adding store:", error);
+      setStoreMessage("Server error. Please try again.");
+    } finally {
+      setStoreLoading(false);
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-[#D9D9D9]">
-      {/* Header */}
-      <div className="w-full h-[12%] flex justify-between items-center bg-[#D9D9D9]">
-        <div className="text-4xl text-[#A4957B] font-LaBelleAurore font-normal ml-5">
-          Trendora
-        </div>
-        <div className="w-[40%] h-full p-3">
-          <Navbar />
-        </div>
-        <div className="w-[12%] h-[70%] flex justify-center items-center mr-3">
-          <LoginSignupBtn text="LogIn/SignUp" />
-        </div>
-      </div>
-
       {/* Main Content */}
       <div className="flex-1">
         <h1 className="text-5xl font-extrabold text-center mb-8 font-lato text-[#474747] mt-8">
@@ -157,7 +289,7 @@ const AdminDashboardPage = () => {
             >
               <div className="flex justify-between items-center w-full h-[35%]">
                 <h3 className="font-bold font-lato text-2xl h-full">
-                  {store.name}
+                 {store.store_name}
                 </h3>
                 <div className="flex w-[10%] h-full items-center gap-1">
                   <img
@@ -166,11 +298,11 @@ const AdminDashboardPage = () => {
                     className="w-5 h-5"
                   />
                   <span className="text-sm text-yellow-600">
-                    {store.ratingCount}
+                    {store.avg_rating}
                   </span>
                 </div>
               </div>
-              <p className="text-sm text-black mt-2 font-lato font-normal ">
+              <p className="text-sm text-black mt-4 font-lato font-normal overflow-y-scroll custom-scrollbar">
                 {store.address}
               </p>
             </div>
@@ -189,14 +321,16 @@ const AdminDashboardPage = () => {
 
         {/* Reviewers Section */}
         <div className="w-full bg-[#D9D9D9] p-4">
-        <div className="w-full h-[6%] flex justify-between mb-5">
-          <div className="text-xl font-bold font-lato text-black ml-5 w-[15%]">
-            List of Reviewers
-          </div>
-          <div className="w-[10%] h-full flex gap-2 justify-end">
-            <img src="/assets/filter.svg" alt="filter"/>
-            <span className='font-lato font-bold text-black mr-6'>Filter</span>
-          </div>
+          <div className="w-full h-[6%] flex justify-between mb-5">
+            <div className="text-xl font-bold font-lato text-black ml-5 w-[15%]">
+              List of Reviewers
+            </div>
+            <div className="w-[10%] h-full flex gap-2 justify-end relative">
+              <img src="/assets/filter.svg" alt="filter" />
+              <span className="font-lato font-bold text-black mr-6">
+                Filter
+              </span>
+            </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 pl-6 pr-6">
             {visibleUsers.map((user) => (
@@ -212,7 +346,7 @@ const AdminDashboardPage = () => {
                   <img src="/assets/email.svg" alt="email" />
                   {user.email}
                 </div>
-                <div className="text-sm text-black w-full h-[20%] flex items-center p-1 gap-2">
+                <div className="text-sm text-black w-full h-[20%] flex items-center gap-2 overflow-y-scroll custom-scrollbar">
                   <img src="/assets/address.svg" alt="address" />
                   {user.address}
                 </div>
@@ -293,13 +427,15 @@ const AdminDashboardPage = () => {
             <h2 className="text-4xl font-lato text-[#2D2C2C] font-bold mb-4 flex justify-center">
               Sign Up
             </h2>
-            <form className="flex flex-col gap-3">
+            <form className="flex flex-col gap-3" onSubmit={handleAddUser}>
               <div className="relative">
                 <label className="block mb-2 font-bold font-lato text-black">
                   Name
                 </label>
                 <input
                   type="text"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
                   placeholder="Your Name"
                   className="w-full px-4 py-2 border border-[#474747] bg-transparent rounded-lg font-lato font-normal text-black placeholder:text-[#2D2C2C]"
                 />
@@ -313,6 +449,8 @@ const AdminDashboardPage = () => {
                 <div className="relative">
                   <input
                     type="email"
+                    value={userEmail}
+                    onChange={(e) => setUserEmail(e.target.value)}
                     placeholder="example@gmail.com"
                     className="w-full px-4 py-2 border border-[#474747] rounded-lg bg-transparent font-lato font-normal text-black placeholder:text-[#2D2C2C]"
                   />
@@ -328,6 +466,8 @@ const AdminDashboardPage = () => {
                   <input
                     type={showPassword ? "text" : "password"}
                     placeholder="********"
+                    value={userPassword}
+                    onChange={(e) => setUserPassword(e.target.value)}
                     className="w-full px-4 py-2 border border-[#474747] rounded-lg bg-transparent font-lato font-normal text-black placeholder:text-[#2D2C2C]"
                   />
                   <span
@@ -341,7 +481,11 @@ const AdminDashboardPage = () => {
 
               <div>
                 <label className="block mb-2 font-bold font-lato">Roles</label>
-                <select className="w-full px-4 py-2 border border-[#474747] rounded-lg bg-transparent font-lato font-normal text-black placeholder:text-[#2D2C2C] cursor-pointer">
+                <select
+                  className="w-full px-4 py-2 border border-[#474747] rounded-lg bg-transparent font-lato font-normal text-black placeholder:text-[#2D2C2C] cursor-pointer"
+                  value={userRole}
+                  onChange={(e) => setUserRole(e.target.value)}
+                >
                   <option className="font-lato">Choose Your Role</option>
                   <option className="font-lato">User</option>
                   <option className="font-lato">Store Owner</option>
@@ -357,6 +501,8 @@ const AdminDashboardPage = () => {
                   <input
                     type="text"
                     placeholder="Your Address"
+                    value={userAddress}
+                    onChange={(e) => setUserAddress(e.target.value)}
                     className="w-full px-4 py-2 border border-[#474747] rounded-lg font-lato font-bold bg-transparent text-black placeholder:text-[#2D2C2C] "
                   />
                   <FaMapMarkerAlt className="absolute right-3 top-3" />
@@ -366,8 +512,9 @@ const AdminDashboardPage = () => {
               <button
                 type="submit"
                 className="w-full bg-[#303030] text-white py-3 rounded-lg border border-[#303030]"
+                disabled={userLoading}
               >
-                Sign Up
+                {userLoading ? "Adding..." : "Sign Up"}
               </button>
             </form>
           </div>
@@ -387,13 +534,15 @@ const AdminDashboardPage = () => {
             <h2 className="text-5xl text-[#2D2C2C] mb-4 font-lato font-bold text-center">
               Add Store
             </h2>
-            <form className="flex flex-col gap-4">
+            <form className="flex flex-col gap-4" onSubmit={handleAddStore}>
               {/* Store Name */}
               <div className="flex flex-col">
                 <label className="mb-1 font-semibold">Store Name</label>
                 <div className="relative">
                   <input
                     type="text"
+                    value={storeName}
+                    onChange={(e) => setStoreName(e.target.value)}
                     placeholder="Your Store Name"
                     className="border border-[#474747] p-3 pr-10 rounded-md w-full bg-transparent placeholder:text-[#2D2C2C] font-lato font-normal"
                   />
@@ -411,6 +560,8 @@ const AdminDashboardPage = () => {
                 <div className="relative">
                   <input
                     type="email"
+                    value={storeOwnerEmail}
+                    onChange={(e) => setStoreOwnerEmail(e.target.value)}
                     placeholder="example@gmail.com"
                     className="border border-[#474747] p-3 pr-10 rounded-md w-full bg-transparent placeholder:text-[#2D2C2C] font-lato font-normal"
                   />
@@ -428,6 +579,8 @@ const AdminDashboardPage = () => {
                 <div className="relative">
                   <textarea
                     maxLength={100}
+                    value={storeAddress}
+                    onChange={(e) => setStoreAddress(e.target.value)}
                     placeholder="Your address"
                     className="border border-[#474747] p-3 pr-10 rounded-md w-full bg-transparent placeholder:text-[#2D2C2C] font-lato font-normal"
                     rows={3}
@@ -440,8 +593,15 @@ const AdminDashboardPage = () => {
                 </div>
               </div>
 
-              <button className="bg-[#2D2C2C] text-white py-2 rounded border border-[#303030] font-lato font-bold mt-3">
-                Sign Up
+              {storeMessage && (
+                <p className="text-red-600 font-lato text-sm">{storeMessage}</p>
+              )}
+
+              <button className="bg-[#2D2C2C] text-white py-2 rounded border border-[#303030] font-lato font-bold mt-3"
+              disabled={storeLoading}
+              type="submit"
+              >
+                {storeLoading ? "Adding..." : "Add Store"}
               </button>
             </form>
           </div>

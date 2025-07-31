@@ -1,23 +1,47 @@
-import React,{useState,useRef,useEffect} from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Footer from '../components/Footer';
 
 const OwnerDashboardPage = () => {
-  const averageRating = 3.9;
-  const totalReviewers = 40;
-
-  // Dummy reviewers list
-  const allReviewers = Array.from({ length: 100 }, (_, i) => ({
-    id: i + 1,
-    name: `User ${i+1}`,
-    rating: Math.floor(Math.random() * 5) + 1, 
-  }));
-
-  const [reviewers, setReviewers] = useState(allReviewers.slice(0, 20));
+  const [averageRating, setAverageRating] = useState(0);
+  const [totalReviewers, setTotalReviewers] = useState(0);
+  const [allReviewers, setAllReviewers] = useState([]);
+  const [reviewers, setReviewers] = useState([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const loaderRef = useRef(null);
 
-  // Load more reviewers
+  // Fetch dashboard data
+  const fetchDashboardData = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch('https://backendlearning-9mmn.onrender.com/api/stores/owner/dashboard', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+      if (res.ok && data.length > 0) {
+        const storeData = data[0];
+        setAverageRating(storeData.avg_rating || 0);
+        setTotalReviewers(storeData.total_reviewers || 0);
+
+        const reviewersList = storeData.ratings || [];
+        setAllReviewers(reviewersList);
+        setReviewers(reviewersList.slice(0, 20));
+      }
+    } catch (err) {
+      console.error('Error fetching owner dashboard:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  // Load more reviewers (pagination)
   const loadMore = () => {
     if (loading) return;
     setLoading(true);
@@ -30,7 +54,7 @@ const OwnerDashboardPage = () => {
         setPage(nextPage);
       }
       setLoading(false);
-    }, 1000); // Simulating network delay
+    }, 1000);
   };
 
   // Intersection Observer for infinite scroll
@@ -45,16 +69,18 @@ const OwnerDashboardPage = () => {
     );
 
     if (loaderRef.current) observer.observe(loaderRef.current);
-
     return () => {
       if (loaderRef.current) observer.unobserve(loaderRef.current);
     };
   }, [loaderRef.current, page]);
+
   return (
     <div className="w-full h-full bg-[#D9D9D9]">
       {/* Dashboard Section */}
-      <div className="w-full h-auto bg-[#D9D9D9] py-8">
-        <h1 className="text-5xl font-extrabold text-center mb-8 font-lato text-[#474747]">Dashboard</h1>
+      <div className="w-full h-[100vh] bg-[#D9D9D9] py-8 flex flex-col">
+        <h1 className="text-5xl font-extrabold text-center mb-8 font-lato text-[#474747]">
+          Dashboard
+        </h1>
 
         {/* Stats */}
         <div className="flex justify-center gap-8 mb-8">
@@ -77,12 +103,12 @@ const OwnerDashboardPage = () => {
           List of Reviewers
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 px-9">
-          {reviewers.map((reviewer) => (
+          {reviewers.map((reviewer, index) => (
             <div
-              key={reviewer.id}
+              key={index}
               className="w-[85%] rounded-md p-2 flex flex-col items-center border border-[#47474780]"
             >
-              <p className="font-bold font-lato mb-2">{reviewer.name}</p>
+              <p className="font-bold font-lato mb-2">{reviewer.user_name}</p>
               <div className="flex gap-1">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <img
@@ -90,7 +116,7 @@ const OwnerDashboardPage = () => {
                     alt="star"
                     src={
                       star <= reviewer.rating
-                        ? "/assets/fillstar.svg" 
+                        ? "/assets/fillstar.svg"
                         : "/assets/emptystar.svg"
                     }
                     className="h-5 w-5"
@@ -101,7 +127,7 @@ const OwnerDashboardPage = () => {
           ))}
         </div>
 
-          <div ref={loaderRef} className="flex justify-center py-6">
+        <div ref={loaderRef} className="flex justify-center py-6">
           {loading && (
             <div className="w-10 h-10 border-4 border-gray-300 border-t-[#474747] rounded-full animate-spin"></div>
           )}

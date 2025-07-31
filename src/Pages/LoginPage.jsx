@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { FaEnvelope, FaEye, FaEyeSlash } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -9,7 +10,6 @@ const LoginPage = () => {
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   
-  // ✅ Auto-redirect if already logged in
   useEffect(() => {
     const token =
       localStorage.getItem("token") || sessionStorage.getItem("token");
@@ -20,9 +20,19 @@ const LoginPage = () => {
 
   const handleLogin = async (e) => {
     if(email === "" || password === ""){
-      alert("Fill Email & Password fields");
+    toast.error("Fill Email & Password fields", { position: "top-center" });
       return;
     }
+
+    const passwordRegex = /^(?=.*[A-Z])(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,16}$/;
+    if (!passwordRegex.test(password)) {
+    toast.error(
+      "Password must be 8-16 chars, include 1 uppercase & 1 special char",
+      { position: "top-center" }
+    );
+    return;
+  }
+    
     e.preventDefault();
     try {
       const res = await fetch("https://backendlearning-9mmn.onrender.com/api/auth/login", {
@@ -33,16 +43,22 @@ const LoginPage = () => {
 
       const data = await res.json();
       if (res.ok) {
-          localStorage.setItem("token", data.token); // persistent
-      localStorage.setItem('rememberMe', JSON.stringify(data.rememberMe));
-      localStorage.setItem('name', data.user.name);
-      localStorage.setItem('role', data.user.role);
-        navigate("/");
+          localStorage.setItem("token", data.token); 
+          localStorage.setItem('rememberMe', JSON.stringify(data.rememberMe));
+          localStorage.setItem('name', data.user.name);
+          localStorage.setItem('role', data.user.role);
+        toast.success("Login Successful", { position: "top-center" });
+      navigate("/");
       } else {
-        alert(data.msg || "Login failed");
+        toast.error(data.msg || "Invalid Credentials", {
+        position: "top-center",
+      });
       }
     } catch (error) {
       console.error("Login error:", error);
+      toast.error("Something went wrong. Please try again later.", {
+      position: "top-center",
+    });
     }
   };
 

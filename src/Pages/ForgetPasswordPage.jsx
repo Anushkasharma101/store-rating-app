@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const ForgetPasswordPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -10,37 +12,107 @@ const ForgetPasswordPage = () => {
   const [showOtp, setShowOtp] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   // Step 1: Verify email (simulate sending OTP)
-  const handleVerifyEmail = () => {
+  const handleVerifyEmail = async () => {
     if (!email) {
-      alert("Please enter an email");
+      toast.error("Please enter an email");
       return;
     }
-    setShowOtp(true);
-    alert("OTP sent to your email!");
-    // In real case: API call to send OTP
+
+    try {
+      setLoading(true);
+      const response = await fetch(
+        "https://backendlearning-9mmn.onrender.com/api/auth/request-otp",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        }
+      );
+
+      const data = await response.json();
+      if (response.ok) {
+        setShowOtp(true);
+        toast.success("OTP sent to your email!");
+      } else {
+        toast.error(data.msg || "Failed to send OTP");
+      }
+    } catch (error) {
+      toast.error("Server error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Step 2: Check OTP (simulate backend validation)
-  const handleCheckOtp = () => {
-    if (otp === "1234") {
-      setOtpVerified(true);
-      setOtpError(false);
-    } else {
-      setOtpError(true);
-    }
-  };
-
-  // Step 3: Handle password reset
-  const handlePasswordChange = (e) => {
-    e.preventDefault();
-    if (newPassword !== confirmPassword) {
-      alert("Passwords do not match");
+  const handleCheckOtp = async () => {
+    if (!otp) {
+      alert("Enter OTP");
       return;
     }
-    alert("Password changed successfully!");
-    // API call: send newPassword to backend
+
+    try {
+      setLoading(true);
+      const response = await fetch(
+        "https://backendlearning-9mmn.onrender.com/api/auth/verify-otp",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, otp }),
+        }
+      );
+
+      const data = await response.json();
+      if (response.ok) {
+        setOtpVerified(true);
+        setOtpError(false);
+        toast.success("OTP verified successfully");
+      } else {
+        setOtpError(true);
+        toast.error(data.msg || "Invalid OTP");
+      }
+    } catch (error) {
+      toast.error("Server error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  // Step 3: Handle password reset
+   const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await fetch(
+        "https://backendlearning-9mmn.onrender.com/api/auth/reset-password",
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            newPassword,
+            confirmPassword,
+          }),
+        }
+      );
+
+      const data = await response.json();
+      if (response.ok) {
+        toast.success("Password reset successful!");
+      } else {
+        toast.error(data.msg || "Failed to reset password");
+      }
+    } catch (error) {
+      toast.error("Server error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -82,7 +154,7 @@ const ForgetPasswordPage = () => {
                 className="absolute right-3 top-10 cursor-pointer text-[#2D2C2C] font-lato font-normal"
                 onClick={handleVerifyEmail}
               >
-                Verify
+               {loading ? "Sending..." : "Verify"}
               </div>
             </div>
 
@@ -104,7 +176,7 @@ const ForgetPasswordPage = () => {
                     className="absolute right-3 top-2 cursor-pointer text-blue-600 font-bold"
                     onClick={handleCheckOtp}
                   >
-                    Check
+                    {loading ? "Checking..." : "Check"}
                   </div>
                 </div>
                 <div className="w-full h-[10%] flex justify-end font-lato font-normal mt-1 cursor-pointer">
@@ -164,8 +236,9 @@ const ForgetPasswordPage = () => {
                 <button
                   type="submit"
                   className="w-full bg-[#303030] text-white py-3 rounded-lg border border-[#303030] font-lato font-bold"
+                  disabled={loading}
                 >
-                  Change Password
+                  {loading ? "Processing..." : "Change Password"}
                 </button>
               </>
             )}

@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { FaEnvelope, FaEye, FaEyeSlash, FaMapMarkerAlt } from "react-icons/fa";
 import { FaUserLarge } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+
 
 const SignUpPage = () => {
   const [password, setPassword] = useState("");
@@ -14,7 +16,7 @@ const SignUpPage = () => {
   const [nameError, setNameError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [emailError, setEmailError] = useState("");
-const maxLength = 400;
+  const maxLength = 400;
   const isExceeded = address.length > maxLength;
 
   const addressHandleChange = (e) => {
@@ -56,7 +58,6 @@ const maxLength = 400;
     }
   };
 
-
   const handleChange = (e) => {
     const value = e.target.value;
     setName(value);
@@ -71,21 +72,28 @@ const maxLength = 400;
     }
   };
 
-   // ✅ Custom function using fetch
-  const signUp = async () => {
-    if(name === "" || email === "" || role === "Choose Your Role" || address === "" || password === ""){
+  // ✅ Custom function using fetch
+  const signUp = async (e) => {
+    e.preventDefault();
+    if (
+      name === "" ||
+      email === "" ||
+      role === "Choose Your Role" ||
+      address === "" ||
+      password === ""
+    ) {
       alert("Fill all the details");
       return;
     }
-    console.log("dataaaaaaa",name,email,password,role,address);
-    
+    console.log("dataaaaaaa", name, email, password, role, address);
+
     try {
       const response = await fetch(
-        'https://backendlearning-9mmn.onrender.com/api/auth/register',
+        "https://backendlearning-9mmn.onrender.com/api/auth/register",
         {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             name: name,
@@ -100,23 +108,23 @@ const maxLength = 400;
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.msg || 'Registration failed');
+        throw new Error(data.msg || "Registration failed");
       }
-
-      console.log('✅ Registered:', data);
-
-      // ✅ Redirect to login
-      navigate('/login');
+      localStorage.setItem("role", role);
+      console.log("✅ Registered:", data);
+      toast.success("User Registered Successfully");
+      navigate("/login");
     } catch (error) {
-      console.error('❌ Error during registration:', error);
+      toast.error("Error during registration");
+      console.error("❌ Error during registration:", error);
 
       // Optionally print network details
-    if (error instanceof Error) {
-      console.error('Message:', error.message);
-      console.error('Stack:', error.stack);
-    }
+      if (error instanceof Error) {
+        console.error("Message:", error.message);
+        console.error("Stack:", error.stack);
+      }
 
-    alert('An error occurred. Check console for details.');
+      alert("An error occurred. Check console for details.");
     }
   };
 
@@ -141,20 +149,22 @@ const maxLength = 400;
           <h2 className="text-3xl font-bold mb-6 text-center font-lato text-[#2D2C2C]">
             Sign Up
           </h2>
-          <form className="space-y-4">
+          <form className="space-y-4" onSubmit={signUp}>
             <div className="relative">
               <label className="block mb-2 font-bold font-lato text-[#2D2C2C]">
                 Name
               </label>
               <input
-        type="text"
-        value={name}
-        onChange={handleChange}
-        placeholder="Your Name"
-        className={`w-full px-4 py-2 border rounded-lg font-lato font-normal text-[#2D2C2C] bg-transparent placeholder:text-[#2D2C2C] focus:placeholder:text-[#515151] 
+                type="text"
+                value={name}
+                onChange={handleChange}
+                placeholder="Your Name"
+                className={`w-full px-4 py-2 border rounded-lg font-lato font-normal text-[#2D2C2C] bg-transparent placeholder:text-[#2D2C2C] focus:placeholder:text-[#515151] 
         ${nameError ? "border-red-500" : "border-[#474747]"}`}
-      />
-            {nameError && <p className="text-red-500 mt-1 text-sm">{nameError}</p>}
+              />
+              {nameError && (
+                <p className="text-red-500 mt-1 text-sm">{nameError}</p>
+              )}
               <FaUserLarge className="absolute right-3 top-11" />
             </div>
 
@@ -164,14 +174,16 @@ const maxLength = 400;
               </label>
               <div className="relative">
                 <input
-        type="email"
-        value={email}
-        onChange={emailHandleChange}
-        placeholder="example@gmail.com"
-        className={`w-full px-4 py-2 border rounded-lg font-lato font-normal text-[#2D2C2C] bg-transparent placeholder:text-[#2D2C2C] focus:placeholder:text-[#515151]
-          ${emailError ? "border-red-500" : "border-[#474747]"}`}
-      />
-      {emailError && <p className="text-red-500 text-sm mt-1">{emailError}</p>}
+                  type="email"
+                  value={email}
+                  onChange={emailHandleChange}
+                  placeholder="example@gmail.com"
+                  className={`w-full px-4 py-2 border rounded-lg font-lato font-normal text-[#2D2C2C] bg-transparent placeholder:text-[#2D2C2C] focus:placeholder:text-[#515151]
+                ${emailError ? "border-red-500" : "border-[#474747]"}`}
+                />
+                {emailError && (
+                  <p className="text-red-500 text-sm mt-1">{emailError}</p>
+                )}
                 <FaEnvelope className="absolute right-3 top-3" />
               </div>
             </div>
@@ -184,12 +196,18 @@ const maxLength = 400;
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
-                onChange={passwordHandleChange}
+                  onChange={passwordHandleChange}
                   placeholder="••••••"
                   className={`w-full px-4 py-2 rounded-lg bg-transparent font-lato font-normal text-[#2D2C2C] placeholder:text-[#2D2C2C] focus:placeholder:text-[#515151]
-            ${passwordError ? "border-red-500 border-2" : "border border-[#474747]"}`}
-        />
-        {passwordError && <p className="text-red-500 text-sm mt-1">{passwordError}</p>}
+            ${
+              passwordError
+                ? "border-red-500 border-2"
+                : "border border-[#474747]"
+            }`}
+                />
+                {passwordError && (
+                  <p className="text-red-500 text-sm mt-1">{passwordError}</p>
+                )}
                 <span
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-3 cursor-pointer text-[#2D2C2C]"
@@ -202,12 +220,37 @@ const maxLength = 400;
             <div>
               <label className="block mb-2 font-bold font-lato">Roles</label>
               <div className="relative w-full">
-                <select value={role}
-                onChange={(e)=>{setRole(e.target.value)}} className="appearance-none cursor-pointer w-full px-4 py-2 border border-[#474747] rounded-lg bg-transparent font-lato font-normal text-[#2D2C2C] placeholder:text-[#2D2C2C]">
-                  <option value={"Choose Your Role"} className="font-lato bg-[#2D2C2C] text-white selection:bg-white selection:text-[#2D2C2C]">Choose Your Role</option>
-                  <option value={"User"} className="font-lato bg-[#2D2C2C] text-white selection:bg-white selection:text-[#2D2C2C]">User</option>
-                  <option value={"Store Owner"} className="font-lato bg-[#2D2C2C] text-white selection:bg-white selection:text-[#2D2C2C]">Store Owner</option>
-                  <option value={"System Administrator"} className="font-lato bg-[#2D2C2C] text-white selection:bg-white selection:text-[#2D2C2C]">System Administrator</option>
+                <select
+                  value={role}
+                  onChange={(e) => {
+                    setRole(e.target.value);
+                  }}
+                  className="appearance-none cursor-pointer w-full px-4 py-2 border border-[#474747] rounded-lg bg-transparent font-lato font-normal text-[#2D2C2C] placeholder:text-[#2D2C2C]"
+                >
+                  <option
+                    value={"Choose Your Role"}
+                    className="font-lato bg-[#2D2C2C] text-white selection:bg-white selection:text-[#2D2C2C]"
+                  >
+                    Choose Your Role
+                  </option>
+                  <option
+                    value={"User"}
+                    className="font-lato bg-[#2D2C2C] text-white selection:bg-white selection:text-[#2D2C2C]"
+                  >
+                    User
+                  </option>
+                  <option
+                    value={"Store Owner"}
+                    className="font-lato bg-[#2D2C2C] text-white selection:bg-white selection:text-[#2D2C2C]"
+                  >
+                    Store Owner
+                  </option>
+                  <option
+                    value={"System Administrator"}
+                    className="font-lato bg-[#2D2C2C] text-white selection:bg-white selection:text-[#2D2C2C]"
+                  >
+                    System Administrator
+                  </option>
                 </select>
 
                 {/* Custom down arrow */}
@@ -233,21 +276,21 @@ const maxLength = 400;
               </label>
               <div className="relative">
                 <textarea
-        placeholder="Your Address"
-        value={address}
-        onChange={addressHandleChange}
-        maxLength={maxLength}
-        className={`w-full px-4 py-2 border resize-none rounded-lg font-lato font-bold bg-transparent text-[#2D2C2C] placeholder:text-[#2D2C2C] focus:placeholder:text-[#515151]
+                  placeholder="Your Address"
+                  value={address}
+                  onChange={addressHandleChange}
+                  maxLength={maxLength}
+                  className={`w-full px-4 py-2 border resize-none rounded-lg font-lato font-bold bg-transparent text-[#2D2C2C] placeholder:text-[#2D2C2C] focus:placeholder:text-[#515151]
           ${isExceeded ? "border-red-500 border-2" : "border-[#474747]"}`}
-      />
-      {/* Character count */}
-      <span
-        className={`absolute bottom-2 right-3 text-sm ${
-          isExceeded ? "text-red-500" : "text-gray-500"
-        }`}
-      >
-        {address.length}/{maxLength}
-      </span>
+                />
+                {/* Character count */}
+                <span
+                  className={`absolute bottom-2 right-3 text-sm ${
+                    isExceeded ? "text-red-500" : "text-gray-500"
+                  }`}
+                >
+                  {address.length}/{maxLength}
+                </span>
                 <FaMapMarkerAlt className="absolute right-3 top-3" />
               </div>
             </div>
@@ -255,19 +298,18 @@ const maxLength = 400;
             <button
               type="submit"
               className="w-full bg-[#2D2C2C] text-white py-3 rounded-lg border border-[#2D2C2C]"
-              onClick={signUp}
             >
               Sign Up
             </button>
 
             <p className="text-center text-white mt-4 font-bold font-lato">
               Already have an account?{" "}
-              <a
-                href="/login"
-                className="text-[#2D2C2C] hover:underline font-bold font-lato"
+              <span
+                onClick={() => navigate("/login")}
+                className="text-[#2D2C2C] hover:underline font-bold font-lato cursor-pointer"
               >
                 Login
-              </a>
+              </span>
             </p>
           </form>
         </div>
